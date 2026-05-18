@@ -473,9 +473,9 @@ def get_unc_listing(creds, unc_path, username=None, password=None):
 
 
 def get_unc_file(creds, unc_path, username=None, password=None):
+    import base64
     as_conn = http_connector_from_creds(creds)
 
-    # Perform request.
     operation = {'Name': 'Fetch', 'Store': 'DocumentLibrary', 'LinkId': unc_path}
     if username is not None:
         operation['UserName'] = username
@@ -487,7 +487,10 @@ def get_unc_file(creds, unc_path, username=None, password=None):
     xmldoc_res = as_request(as_conn, "ItemOperations", xmldoc_req)
     responses = ItemOperations.parse(xmldoc_res)
 
-    # Parse response.
     op, _, path, info, _ = responses[0]
-    data = info['Data'].decode('base64')
+    
+    if info is None:
+        raise RuntimeError(f"No data returned for {unc_path} — check path, permissions, or auth")
+    
+    data = base64.b64decode(info['Data'])
     return data
